@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 
 const userSchema = new mongoose.Schema({
@@ -55,7 +54,6 @@ const userSchema = new mongoose.Schema({
     maxlength: [100, 'Location cannot exceed 100 characters'],
     default: '',
   },
-  // Security fields
   lastLogin: {
     type: Date,
     default: Date.now,
@@ -68,12 +66,10 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
-  // Token fields
   emailVerificationToken: String,
   emailVerificationExpire: Date,
   resetPasswordToken: String,
   resetPasswordExpire: Date,
-  // Timestamps
   createdAt: {
     type: Date,
     default: Date.now,
@@ -84,25 +80,7 @@ const userSchema = new mongoose.Schema({
   },
 });
 
-// Update the updatedAt timestamp on save
-userSchema.pre('save', function(next) {
-  this.updatedAt = Date.now();
-  next();
-});
 
-// Encrypt password before saving
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  this.password = await bcrypt.hash(this.password, 12);
-  next();
-});
-
-// Compare password method
-userSchema.methods.comparePassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
-};
-
-// Generate email verification token
 userSchema.methods.generateEmailVerificationToken = function() {
   const verificationToken = crypto.randomBytes(32).toString('hex');
   
@@ -111,12 +89,12 @@ userSchema.methods.generateEmailVerificationToken = function() {
     .update(verificationToken)
     .digest('hex');
     
-  this.emailVerificationExpire = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+  this.emailVerificationExpire = Date.now() + 24 * 60 * 60 * 1000;
   
   return verificationToken;
 };
 
-// Generate password reset token
+
 userSchema.methods.generateResetPasswordToken = function() {
   const resetToken = crypto.randomBytes(32).toString('hex');
   
@@ -125,35 +103,31 @@ userSchema.methods.generateResetPasswordToken = function() {
     .update(resetToken)
     .digest('hex');
     
-  this.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+  this.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
   
   return resetToken;
 };
 
-// Check if account is locked
 userSchema.methods.isLocked = function() {
   return !!(this.lockUntil && this.lockUntil > Date.now());
 };
 
 // Increment login attempts
-userSchema.methods.incLoginAttempts = function() {
-  // If lock has expired, reset attempts
+userSchema.methods.incLoginAttempts = async function() {
   if (this.lockUntil && this.lockUntil < Date.now()) {
-    return this.updateOne({
+    return await this.updateOne({
       $set: { loginAttempts: 1 },
       $unset: { lockUntil: 1 }
     });
   }
   
-  // Otherwise increment attempts
   const updates = { $inc: { loginAttempts: 1 } };
   
-  // Lock the account if we've reached max attempts and it's not already locked
   if (this.loginAttempts + 1 >= 5 && !this.isLocked()) {
-    updates.$set = { lockUntil: Date.now() + 30 * 60 * 1000 }; // Lock for 30 minutes
+    updates.$set = { lockUntil: Date.now() + 30 * 60 * 1000 };
   }
   
-  return this.updateOne(updates);
+  return await this.updateOne(updates);
 };
 
 // Generate JWT token

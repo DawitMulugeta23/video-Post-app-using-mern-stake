@@ -1,6 +1,25 @@
 const User = require('../model/users.models');
-const sendEmail = require('../utils/emailService.utils');
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
+const { sendEmail } = require('../utils/emailService.utils'); 
 const { sendTemplatedEmail } = require('../utils/emailTemplates');
+
+// Helper function to hash password
+const hashPassword = async (password) => {
+  return await bcrypt.hash(password, 10);
+};
+
+// Helper function to compare password
+const comparePassword = async (password, hashedPassword) => {
+  return await bcrypt.compare(password, hashedPassword);
+};
+
+// Helper function to update timestamps
+const updateTimestamps = (user) => {
+  user.updatedAt = Date.now();
+  return user;
+};
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -8,6 +27,8 @@ const { sendTemplatedEmail } = require('../utils/emailTemplates');
 const register = async (req, res) => {
   try {
     const { username, email, password } = req.body;
+
+    console.log('Registration attempt:', { username, email });
 
     // Check if user exists
     const existingUser = await User.findOne({
@@ -22,29 +43,44 @@ const register = async (req, res) => {
       });
     }
 
-    // Create user
-    const user = await User.create({
+    // Hash password in controller
+    const hashedPassword = await hashPassword(password);
+
+    // Create user with hashed password
+    const user = new User({
       username,
       email,
-      password,
+      password: hashedPassword,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
     });
+
+    // Save user
+    await user.save();
+
+    console.log('User created:', user._id);
 
     // Generate verification token
     const verificationToken = user.generateEmailVerificationToken();
+    user.updatedAt = Date.now(); // Manually update timestamp
     await user.save({ validateBeforeSave: false });
 
     // Create verification URL
     const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
 
     // Send verification email
-    await sendTemplatedEmail(sendEmail, {
-      to: user.email,
-      template: 'welcome',
-      data: {
-        username: user.username,
-        verificationUrl,
-      },
-    });
+    try {
+      await sendTemplatedEmail(sendEmail, {
+        to: user.email,
+        template: 'welcome',
+        data: {
+          username: user.username,
+          verificationUrl,
+        },
+      });
+    } catch (emailError) {
+      console.log('Email sending failed (but user was created):', emailError.message);
+    }
 
     res.status(201).json({
       success: true,
@@ -55,6 +91,7 @@ const register = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error during registration',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
   }
 };
@@ -85,8 +122,8 @@ const login = async (req, res) => {
       });
     }
 
-    // Check password
-    const isPasswordMatch = await user.comparePassword(password);
+    // Compare password using helper function
+    const isPasswordMatch = await comparePassword(password, user.password);
 
     if (!isPasswordMatch) {
       // Increment login attempts
@@ -106,8 +143,9 @@ const login = async (req, res) => {
       user.lockUntil = null;
     }
 
-    // Update last login
+    // Update last login and timestamp
     user.lastLogin = Date.now();
+    user.updatedAt = Date.now();
     await user.save();
 
     // Check if email is verified
@@ -177,6 +215,7 @@ const verifyEmail = async (req, res) => {
     user.isEmailVerified = true;
     user.emailVerificationToken = undefined;
     user.emailVerificationExpire = undefined;
+    user.updatedAt = Date.now(); // Manually update timestamp
     await user.save();
 
     // Send confirmation email
@@ -219,6 +258,7 @@ const forgotPassword = async (req, res) => {
 
     // Generate reset token
     const resetToken = user.generateResetPasswordToken();
+    user.updatedAt = Date.now(); // Manually update timestamp
     await user.save({ validateBeforeSave: false });
 
     // Create reset URL
@@ -243,6 +283,7 @@ const forgotPassword = async (req, res) => {
       // If email fails, clear reset token
       user.resetPasswordToken = undefined;
       user.resetPasswordExpire = undefined;
+      user.updatedAt = Date.now();
       await user.save({ validateBeforeSave: false });
 
       return res.status(500).json({
@@ -286,10 +327,14 @@ const resetPassword = async (req, res) => {
       });
     }
 
+    // Hash new password in controller
+    const hashedPassword = await hashPassword(password);
+
     // Set new password
-    user.password = password;
+    user.password = hashedPassword;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
+    user.updatedAt = Date.now(); // Manually update timestamp
     await user.save();
 
     // Send confirmation email
@@ -314,7 +359,7 @@ const resetPassword = async (req, res) => {
   }
 };
 
-// @desc    Get current user
+
 // @route   GET /api/auth/me
 // @access  Private
 const getMe = async (req, res) => {
@@ -334,9 +379,44 @@ const getMe = async (req, res) => {
   }
 };
 
-// @desc    Logout user
-// @route   GET /api/auth/logout
-// @access  Private
+const updatePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    
+    const user = await User.findById(req.user.id).select('+password');
+    
+    // Compare current password
+    const isMatch = await comparePassword(currentPassword, user.password);
+    
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Current password is incorrect',
+      });
+    }
+    
+    // Hash new password
+    const hashedPassword = await hashPassword(newPassword);
+    
+    // Update password
+    user.password = hashedPassword;
+    user.updatedAt = Date.now(); // Manually update timestamp
+    await user.save();
+    
+    res.json({
+      success: true,
+      message: 'Password updated successfully',
+    });
+  } catch (error) {
+    console.error('Update password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+    });
+  }
+};
+
+
 const logout = (req, res) => {
   res.json({
     success: true,
@@ -351,5 +431,6 @@ module.exports = {
   forgotPassword,
   resetPassword,
   getMe,
+  updatePassword,
   logout,
 };
