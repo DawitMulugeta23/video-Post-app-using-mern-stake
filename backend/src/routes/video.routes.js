@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middleware/auth');
+const { protect } = require('../middelware/middelware.auths');
 const {
   uploadVideo,
   getPublicVideos,
@@ -9,7 +9,7 @@ const {
   updatePrivacy,
   deleteVideo,
   likeVideo,
-} = require('../controllers/videoController');
+} = require('../controller/video.controller');
 
 // Public routes
 router.get('/public', getPublicVideos);

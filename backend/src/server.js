@@ -3,9 +3,10 @@ const cors = require('cors');
 require('dotenv').config();
 
 const connectDB = require('./config/db');
-const authRoutes = require('./routes/authRoutes');
-const videoRoutes = require('./routes/videoRoutes');
-
+const authRoutes = require('./routes/auth.routes');
+const videoRoutes = require('./routes/video.routes');
+// In your server.js, add:
+const userRoutes = require('./routes/User.routes');
 connectDB();
 
 const app = express();
@@ -20,6 +21,7 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/videos', videoRoutes);
+app.use('/api/users', userRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

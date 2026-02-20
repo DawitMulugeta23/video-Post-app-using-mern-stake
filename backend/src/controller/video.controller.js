@@ -1,5 +1,5 @@
-const Video = require('../models/Video');
-const cloudinary = require('../config/cloudinary');
+const Video = require('../model/video');
+const cloudinary = require('../config/config.cloudinary');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 
