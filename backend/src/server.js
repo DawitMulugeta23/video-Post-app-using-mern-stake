@@ -6,12 +6,10 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const videoRoutes = require('./routes/videoRoutes');
 
-// Connect to database
 connectDB();
 
 const app = express();
 
-// Middleware
 app.use(cors({
   origin: process.env.CLIENT_URL,
   credentials: true,
