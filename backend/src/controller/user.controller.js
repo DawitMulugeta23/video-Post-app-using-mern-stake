@@ -29,8 +29,7 @@ const upload = multer({
   },
 }).single('avatar');
 
-// @desc    Get all users (admin only)
-// @route   GET /api/users
+
 // @access  Private/Admin
 const getUsers = async (req, res) => {
   try {
@@ -63,8 +62,6 @@ const getUsers = async (req, res) => {
   }
 };
 
-// @desc    Get single user by ID
-// @route   GET /api/users/:id
 // @access  Private/Admin
 const getUserById = async (req, res) => {
   try {
@@ -98,8 +95,6 @@ const getUserById = async (req, res) => {
   }
 };
 
-// @desc    Get user profile
-// @route   GET /api/users/profile
 // @access  Private
 const getUserProfile = async (req, res) => {
   try {
@@ -138,8 +133,6 @@ const getUserProfile = async (req, res) => {
   }
 };
 
-// @desc    Update user profile
-// @route   PUT /api/users/profile
 // @access  Private
 const updateUserProfile = async (req, res) => {
   try {
@@ -209,8 +202,6 @@ const updateUserProfile = async (req, res) => {
   }
 };
 
-// @desc    Upload avatar
-// @route   POST /api/users/avatar
 // @access  Private
 const uploadAvatar = async (req, res) => {
   upload(req, res, async (err) => {
@@ -256,8 +247,6 @@ const uploadAvatar = async (req, res) => {
   });
 };
 
-// @desc    Delete user account
-// @route   DELETE /api/users/profile
 // @access  Private
 const deleteUserAccount = async (req, res) => {
   try {
@@ -294,8 +283,6 @@ const deleteUserAccount = async (req, res) => {
   }
 };
 
-// @desc    Get user activity
-// @route   GET /api/users/activity
 // @access  Private
 const getUserActivity = async (req, res) => {
   try {
@@ -350,8 +337,6 @@ const getUserActivity = async (req, res) => {
   }
 };
 
-// Admin: Update user role
-// @route   PUT /api/users/:id/role
 // @access  Private/Admin
 const updateUserRole = async (req, res) => {
   try {

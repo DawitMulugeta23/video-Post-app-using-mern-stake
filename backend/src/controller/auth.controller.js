@@ -5,32 +5,25 @@ const jwt = require('jsonwebtoken');
 const { sendEmail } = require('../utils/emailService.utils'); 
 const { sendTemplatedEmail } = require('../utils/emailTemplates');
 
-// Helper function to hash password
 const hashPassword = async (password) => {
   return await bcrypt.hash(password, 10);
 };
 
-// Helper function to compare password
 const comparePassword = async (password, hashedPassword) => {
   return await bcrypt.compare(password, hashedPassword);
 };
 
-// Helper function to update timestamps
 const updateTimestamps = (user) => {
   user.updatedAt = Date.now();
   return user;
 };
 
-// @desc    Register user
-// @route   POST /api/auth/register
-// @access  Public
 const register = async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
     console.log('Registration attempt:', { username, email });
 
-    // Check if user exists
     const existingUser = await User.findOne({
       $or: [{ email }, { username }],
     });
@@ -43,10 +36,8 @@ const register = async (req, res) => {
       });
     }
 
-    // Hash password in controller
     const hashedPassword = await hashPassword(password);
 
-    // Create user with hashed password
     const user = new User({
       username,
       email,
@@ -55,20 +46,16 @@ const register = async (req, res) => {
       updatedAt: Date.now(),
     });
 
-    // Save user
     await user.save();
 
     console.log('User created:', user._id);
 
-    // Generate verification token
     const verificationToken = user.generateEmailVerificationToken();
-    user.updatedAt = Date.now(); // Manually update timestamp
+    user.updatedAt = Date.now(); 
     await user.save({ validateBeforeSave: false });
 
-    // Create verification URL
     const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
 
-    // Send verification email
     try {
       await sendTemplatedEmail(sendEmail, {
         to: user.email,
@@ -96,9 +83,7 @@ const register = async (req, res) => {
   }
 };
 
-// @desc    Login user
-// @route   POST /api/auth/login
-// @access  Public
+
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -121,8 +106,6 @@ const login = async (req, res) => {
         message: `Account locked. Try again in ${lockTime} minutes`,
       });
     }
-
-    // Compare password using helper function
     const isPasswordMatch = await comparePassword(password, user.password);
 
     if (!isPasswordMatch) {
@@ -185,8 +168,6 @@ const login = async (req, res) => {
   }
 };
 
-// @desc    Verify email
-// @route   GET /api/auth/verify-email/:token
 // @access  Public
 const verifyEmail = async (req, res) => {
   try {
@@ -240,8 +221,7 @@ const verifyEmail = async (req, res) => {
   }
 };
 
-// @desc    Forgot password
-// @route   POST /api/auth/forgot-password
+
 // @access  Public
 const forgotPassword = async (req, res) => {
   try {
@@ -300,8 +280,6 @@ const forgotPassword = async (req, res) => {
   }
 };
 
-// @desc    Reset password
-// @route   PUT /api/auth/reset-password/:token
 // @access  Public
 const resetPassword = async (req, res) => {
   try {
@@ -360,7 +338,7 @@ const resetPassword = async (req, res) => {
 };
 
 
-// @route   GET /api/auth/me
+
 // @access  Private
 const getMe = async (req, res) => {
   try {
@@ -385,7 +363,6 @@ const updatePassword = async (req, res) => {
     
     const user = await User.findById(req.user.id).select('+password');
     
-    // Compare current password
     const isMatch = await comparePassword(currentPassword, user.password);
     
     if (!isMatch) {
