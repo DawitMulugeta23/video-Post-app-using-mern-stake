@@ -12,20 +12,8 @@ const Posts = () => {
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('latest');
   const [showFilters, setShowFilters] = useState(false);
-
-  const categories = [
-    { id: 'all', name: 'All', icon: '🎯' },
-    { id: 'entertainment', name: 'Entertainment', icon: '🎬' },
-    { id: 'education', name: 'Education', icon: '📚' },
-    { id: 'gaming', name: 'Gaming', icon: '🎮' },
-    { id: 'music', name: 'Music', icon: '🎵' },
-    { id: 'sports', name: 'Sports', icon: '⚽' },
-    { id: 'technology', name: 'Technology', icon: '💻' },
-    { id: 'travel', name: 'Travel', icon: '✈️' },
-  ];
 
   useEffect(() => {
     fetchVideos();
@@ -43,9 +31,8 @@ const Posts = () => {
   };
 
   const filteredVideos = () => {
-    let filtered = videos;
+    let filtered = [...videos];
 
-    // Search filter
     if (searchTerm) {
       filtered = filtered.filter(video =>
         video.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -53,12 +40,6 @@ const Posts = () => {
       );
     }
 
-    // Category filter
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(video => video.category === selectedCategory);
-    }
-
-    // Sort
     if (sortBy === 'latest') {
       filtered = filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     } else if (sortBy === 'popular') {
@@ -72,8 +53,8 @@ const Posts = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="min-h-screen bg-gray-50 flex justify-center items-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
@@ -81,42 +62,20 @@ const Posts = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm">
+      <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Explore Videos</h1>
           
           {/* Search Bar */}
           <div className="relative max-w-2xl">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <MagnifyingGlassIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
               placeholder="Search videos..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
             />
-          </div>
-        </div>
-      </div>
-
-      {/* Categories */}
-      <div className="border-b border-gray-200 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center space-x-8 overflow-x-auto py-4">
-            {categories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
-                className={`flex items-center space-x-2 px-3 py-2 rounded-lg whitespace-nowrap transition-colors ${
-                  selectedCategory === category.id
-                    ? 'bg-primary-100 text-primary-700'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <span>{category.icon}</span>
-                <span className="font-medium">{category.name}</span>
-              </button>
-            ))}
           </div>
         </div>
       </div>
@@ -126,13 +85,13 @@ const Posts = () => {
         {/* Filter Bar */}
         <div className="flex justify-between items-center mb-6">
           <p className="text-gray-600">
-            Showing {filteredVideos().length} results
+            Showing <span className="font-medium text-indigo-600">{filteredVideos().length}</span> results
           </p>
           
           <div className="flex items-center space-x-4">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <FunnelIcon className="h-5 w-5 text-gray-500" />
               <span>Filter</span>
@@ -144,7 +103,7 @@ const Posts = () => {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
             >
               <option value="latest">Latest</option>
               <option value="popular">Most Viewed</option>
@@ -161,9 +120,13 @@ const Posts = () => {
             ))}
           </div>
         ) : (
-          <div className="text-center py-12 bg-white rounded-lg shadow">
+          <div className="text-center py-16 bg-white rounded-xl shadow-sm">
+            <MagnifyingGlassIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-500 text-lg mb-4">No videos found</p>
-            <Link to="/create" className="btn-primary">
+            <Link
+              to="/create"
+              className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+            >
               Create Your First Post
             </Link>
           </div>

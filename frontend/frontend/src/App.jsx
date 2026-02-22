@@ -12,36 +12,32 @@ import MyVideos from './pages/MyVideos';
 import VideoPlayer from './pages/VideoPlayer';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
-import VerifyEmail from './pages/VerifyEmail';
 import Dashboard from './pages/Dashboard';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Posts from './pages/Posts';
 import CreatePost from './pages/CreatePost';
 
-// Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
   
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="min-h-screen bg-gray-50 flex justify-center items-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
   
-  return isAuthenticated ? children : <Navigate to="/" />;
+  return isAuthenticated ? children : <Navigate to="/login" />;
 };
 
 function AppContent() {
-  const { isAuthenticated } = useAuth();
-  
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <Routes>
-        {/* Public Routes - Home is always visible */}
+        {/* Public Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
@@ -49,44 +45,15 @@ function AppContent() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/create" element={<ProtectedRoute>     <CreatePost /></ProtectedRoute>}/>
         <Route path="/reset-password/:token" element={<ResetPassword />} />
-        <Route path="/verify-email/:token" element={<VerifyEmail />} />
         <Route path="/video/:id" element={<VideoPlayer />} />
 
-        {/* Protected Routes - Only when logged in */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/upload"
-          element={
-            <ProtectedRoute>
-              <UploadVideo />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/my-videos"
-          element={
-            <ProtectedRoute>
-              <MyVideos />
-            </ProtectedRoute>
-          }
-        />
+        {/* Protected Routes */}
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/create" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
+        <Route path="/upload" element={<ProtectedRoute><UploadVideo /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/my-videos" element={<ProtectedRoute><MyVideos /></ProtectedRoute>} />
       </Routes>
     </div>
   );
@@ -104,6 +71,18 @@ function App() {
               background: '#363636',
               color: '#fff',
               borderRadius: '10px',
+            },
+            success: {
+              iconTheme: {
+                primary: '#10b981',
+                secondary: 'white',
+              },
+            },
+            error: {
+              iconTheme: {
+                primary: '#ef4444',
+                secondary: 'white',
+              },
             },
           }}
         />
