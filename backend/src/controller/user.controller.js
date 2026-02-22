@@ -429,6 +429,42 @@ const adminDeleteUser = async (req, res) => {
   }
 };
 
+// Add to user.controller.js
+const getUserByUsername = async (req, res) => {
+  try {
+    const user = await User.findOne({ username: req.params.username })
+      .select('-password -emailVerificationToken -resetPasswordToken -email');
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+    
+    // Get user's public videos
+    const videos = await Video.find({ 
+      user: user._id,
+      privacy: 'public' 
+    })
+    .select('title description thumbnailUrl views likes createdAt')
+    .sort('-createdAt');
+    
+    res.json({
+      success: true,
+      user,
+      videos,
+      videoCount: videos.length,
+    });
+  } catch (error) {
+    console.error('Get user by username error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+    });
+  }
+};
+
 module.exports = {
   getUsers,
   getUserById,
@@ -439,4 +475,5 @@ module.exports = {
   getUserActivity,
   updateUserRole,
   adminDeleteUser,
+  getUserByUsername
 };

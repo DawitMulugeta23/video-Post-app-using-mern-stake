@@ -1,35 +1,116 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import Navbar from './components/layout/Navbar';
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import UploadVideo from './pages/UploadVideo';
+import Profile from './pages/Profile';
+import MyVideos from './pages/MyVideos';
+import VideoPlayer from './pages/VideoPlayer';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+import VerifyEmail from './pages/VerifyEmail';
+import Dashboard from './pages/Dashboard';
+import About from './pages/About';
+import Contact from './pages/Contact';
+import Posts from './pages/Posts';
+import CreatePost from './pages/CreatePost';
 
-function App() {
-  const [count, setCount] = useState(0)
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+  
+  return isAuthenticated ? children : <Navigate to="/" />;
+};
 
+function AppContent() {
+  const { isAuthenticated } = useAuth();
+  
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <Routes>
+        {/* Public Routes - Home is always visible */}
+        <Route path="/" element={<Home />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/posts" element={<Posts />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/create" element={<ProtectedRoute>     <CreatePost /></ProtectedRoute>}/>
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/verify-email/:token" element={<VerifyEmail />} />
+        <Route path="/video/:id" element={<VideoPlayer />} />
+
+        {/* Protected Routes - Only when logged in */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/upload"
+          element={
+            <ProtectedRoute>
+              <UploadVideo />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/my-videos"
+          element={
+            <ProtectedRoute>
+              <MyVideos />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </div>
+  );
 }
 
-export default App
+function App() {
+  return (
+    <Router>
+      <AuthProvider>
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 3000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+              borderRadius: '10px',
+            },
+          }}
+        />
+        <AppContent />
+      </AuthProvider>
+    </Router>
+  );
+}
+
+export default App;

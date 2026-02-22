@@ -9,6 +9,7 @@ const {
   updatePrivacy,
   deleteVideo,
   likeVideo,
+  updateVideo
 } = require('../controller/video.controller');
 
 // Public routes
@@ -22,5 +23,6 @@ router.get('/my-videos/all', getMyVideos);
 router.put('/:id/privacy', updatePrivacy);
 router.delete('/:id', deleteVideo);
 router.post('/:id/like', likeVideo);
+router.put('/:id', protect, updateVideo);
 
 module.exports = router;

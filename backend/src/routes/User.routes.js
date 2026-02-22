@@ -11,6 +11,7 @@ const {
   getUserActivity,
   updateUserRole,
   adminDeleteUser,
+  getUserByUsername
 } = require('../controller/user.controller');
 
 // All user routes are protected
@@ -28,5 +29,6 @@ router.get('/', authorize('admin'), getUsers);
 router.get('/:id', authorize('admin'), getUserById);
 router.put('/:id/role', authorize('admin'), updateUserRole);
 router.delete('/:id', authorize('admin'), adminDeleteUser);
+router.get('/profile/:username', getUserByUsername);
 
 module.exports = router;

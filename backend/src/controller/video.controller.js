@@ -28,9 +28,7 @@ const upload = multer({
   },
 }).single('video');
 
-// @desc    Upload video
-// @route   POST /api/videos
-// @access  Private
+
 const uploadVideo = async (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
@@ -44,11 +42,16 @@ const uploadVideo = async (req, res) => {
 
       const { title, description, privacy } = req.body;
 
+      // Cloudinary automatically generates thumbnails
+      // You can access them using the video URL with .jpg extension
+      const videoUrl = req.file.path;
+      const thumbnailUrl = videoUrl.replace(/\.[^/.]+$/, '.jpg');
+
       const video = await Video.create({
         title,
         description,
-        videoUrl: req.file.path,
-        thumbnailUrl: req.file.path.replace('.mp4', '.jpg'), // Cloudinary generates thumbnail
+        videoUrl: videoUrl,
+        thumbnailUrl: thumbnailUrl,
         publicId: req.file.filename,
         privacy: privacy || 'public',
         user: req.user._id,
@@ -59,14 +62,12 @@ const uploadVideo = async (req, res) => {
         video,
       });
     } catch (error) {
+      console.error('Upload error:', error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   });
 };
 
-// @desc    Get all public videos
-// @route   GET /api/videos/public
-// @access  Public
 const getPublicVideos = async (req, res) => {
   try {
     const videos = await Video.find({ privacy: 'public' })
@@ -79,9 +80,6 @@ const getPublicVideos = async (req, res) => {
   }
 };
 
-// @desc    Get user's videos (public and private)
-// @route   GET /api/videos/my-videos
-// @access  Private
 const getMyVideos = async (req, res) => {
   try {
     const videos = await Video.find({ user: req.user._id })
@@ -93,9 +91,6 @@ const getMyVideos = async (req, res) => {
   }
 };
 
-// @desc    Get single video
-// @route   GET /api/videos/:id
-// @access  Public/Private (based on privacy)
 const getVideo = async (req, res) => {
   try {
     const video = await Video.findById(req.params.id)
@@ -122,9 +117,6 @@ const getVideo = async (req, res) => {
   }
 };
 
-// @desc    Update video privacy
-// @route   PUT /api/videos/:id/privacy
-// @access  Private
 const updatePrivacy = async (req, res) => {
   try {
     const { privacy } = req.body;
@@ -156,9 +148,6 @@ const updatePrivacy = async (req, res) => {
   }
 };
 
-// @desc    Delete video
-// @route   DELETE /api/videos/:id
-// @access  Private
 const deleteVideo = async (req, res) => {
   try {
     const video = await Video.findById(req.params.id);
@@ -183,9 +172,6 @@ const deleteVideo = async (req, res) => {
   }
 };
 
-// @desc    Like/Unlike video
-// @route   POST /api/videos/:id/like
-// @access  Private
 const likeVideo = async (req, res) => {
   try {
     const video = await Video.findById(req.params.id);
@@ -216,6 +202,36 @@ const likeVideo = async (req, res) => {
   }
 };
 
+const updateVideo = async (req, res) => {
+  try {
+    const { title, description, privacy } = req.body;
+    
+    const video = await Video.findById(req.params.id);
+    
+    if (!video) {
+      return res.status(404).json({ message: 'Video not found' });
+    }
+    
+    // Check ownership
+    if (video.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    
+    video.title = title || video.title;
+    video.description = description || video.description;
+    video.privacy = privacy || video.privacy;
+    
+    await video.save();
+    
+    res.json({
+      message: 'Video updated successfully',
+      video,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 module.exports = {
   uploadVideo,
   getPublicVideos,
@@ -224,4 +240,6 @@ module.exports = {
   updatePrivacy,
   deleteVideo,
   likeVideo,
+  updateVideo,
 };
+// Add to video.controller.js
