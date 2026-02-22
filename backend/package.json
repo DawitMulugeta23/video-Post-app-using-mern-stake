@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "./src/server.js",
   "scripts": {
-    "dev":"nodemon ./src/server.js"
+    "dev": "nodemon ./src/server.js"
   },
   "keywords": [],
   "author": "",
@@ -12,6 +12,7 @@
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "cloudinary": "^1.41.3",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "crypto": "^1.0.1",
     "dotenv": "^16.4.3",

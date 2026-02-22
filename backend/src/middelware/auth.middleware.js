@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/users.models');
+const User = require('../model/users.models');
 
 // Protect routes - verify token from cookie
 const protect = async (req, res, next) => {

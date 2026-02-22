@@ -26,7 +26,7 @@ const userSchema = new mongoose.Schema({
   },
   avatar: {
     type: String,
-    default: 'https://res.cloudinary.com/demo/image/upload/v1/default-avatar.png',
+    default: 'default-avatar.png',
   },
   role: {
     type: String,
@@ -71,26 +71,67 @@ const userSchema = new mongoose.Schema({
   },
 });
 
-// REMOVED: emailVerificationToken and emailVerificationExpire fields
-
 // Hash password before saving
 userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  
   try {
+    if (!this.isModified('password')) return next();
+    
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
+    this.updatedAt = Date.now();
     next();
   } catch (error) {
     next(error);
   }
 });
 
-// Update updatedAt on save
-userSchema.pre('save', function(next) {
-  this.updatedAt = Date.now();
-  next();
-});
+// Compare password method
+userSchema.methods.comparePassword = async function(candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
+
+// Generate JWT token
+userSchema.methods.generateAuthToken = function() {
+  const jwt = require('jsonwebtoken');
+  return jwt.sign(
+    { 
+      id: this._id,
+      username: this.username,
+      email: this.email,
+      role: this.role 
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+};
+
+// Check if account is locked
+userSchema.methods.isLocked = function() {
+  return !!(this.lockUntil && this.lockUntil > Date.now());
+};
+
+// Increment login attempts
+userSchema.methods.incLoginAttempts = async function() {
+  if (this.lockUntil && this.lockUntil < Date.now()) {
+    this.loginAttempts = 1;
+    this.lockUntil = null;
+  } else {
+    this.loginAttempts += 1;
+    
+    if (this.loginAttempts >= 5 && !this.isLocked()) {
+      this.lockUntil = Date.now() + 30 * 60 * 1000;
+    }
+  }
+  
+  return await this.save();
+};
+
+// Reset login attempts
+userSchema.methods.resetLoginAttempts = async function() {
+  this.loginAttempts = 0;
+  this.lockUntil = null;
+  return await this.save();
+};
 
 // Generate reset password token
 userSchema.methods.generateResetPasswordToken = function() {
@@ -104,59 +145,6 @@ userSchema.methods.generateResetPasswordToken = function() {
   this.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
   
   return resetToken;
-};
-
-// Check if account is locked
-userSchema.methods.isLocked = function() {
-  return !!(this.lockUntil && this.lockUntil > Date.now());
-};
-
-// Compare password
-userSchema.methods.comparePassword = async function(candidatePassword) {
-  try {
-    return await bcrypt.compare(candidatePassword, this.password);
-  } catch (error) {
-    throw error;
-  }
-};
-
-// Increment login attempts
-userSchema.methods.incLoginAttempts = async function() {
-  if (this.lockUntil && this.lockUntil < Date.now()) {
-    this.loginAttempts = 1;
-    this.lockUntil = null;
-    return await this.save();
-  }
-  
-  this.loginAttempts += 1;
-  
-  if (this.loginAttempts >= 5 && !this.isLocked()) {
-    this.lockUntil = Date.now() + 30 * 60 * 1000;
-  }
-  
-  return await this.save();
-};
-
-// Reset login attempts
-userSchema.methods.resetLoginAttempts = async function() {
-  this.loginAttempts = 0;
-  this.lockUntil = null;
-  return await this.save();
-};
-
-// Generate JWT token (for cookie)
-userSchema.methods.generateAuthToken = function() {
-  const jwt = require('jsonwebtoken');
-  return jwt.sign(
-    { 
-      id: this._id,
-      username: this.username,
-      email: this.email,
-      role: this.role 
-    },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRE || '7d' }
-  );
 };
 
 module.exports = mongoose.model('User', userSchema);
